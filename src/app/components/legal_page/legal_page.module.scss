@@ -1,0 +1,38 @@
+.page {
+  padding: 0 20px;
+
+  .main {
+    max-width: 800px;
+    margin: 40px auto;
+
+    h1 {
+      margin-bottom: 24px;
+    }
+
+    h2 {
+      margin-top: 32px;
+      margin-bottom: 8px;
+    }
+
+    p,
+    ul {
+      line-height: 1.6;
+    }
+
+    ul {
+      margin-left: 20px;
+
+      li {
+        margin-bottom: 4px;
+      }
+    }
+
+    a {
+      color: var(--color-link);
+    }
+
+    .back {
+      margin-top: 48px;
+    }
+  }
+}

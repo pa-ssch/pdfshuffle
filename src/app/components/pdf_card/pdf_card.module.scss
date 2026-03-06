@@ -1,0 +1,122 @@
+$card-width: 130px;
+
+.card {
+  position: relative;
+  width: $card-width;
+  background: white;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+  flex-shrink: 0;
+  transition: box-shadow 0.15s;
+
+  &:hover {
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.22);
+  }
+
+  &:active {
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.22);
+  }
+
+  .removeBtn {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.55);
+    color: white;
+    border: none;
+    cursor: pointer;
+    font-size: 18px;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1;
+    padding: 0;
+    transition: background 0.15s;
+
+    &:hover {
+      background: rgba(220, 38, 38, 0.9);
+    }
+
+    &:active {
+      background: rgba(185, 28, 28, 1);
+      transform: scale(0.9);
+    }
+
+    @media (max-width: 768px) {
+      width: 32px;
+      height: 32px;
+      font-size: 20px;
+      top: 3px;
+      right: 3px;
+    }
+  }
+
+  .preview {
+    width: 100%;
+    aspect-ratio: 1 / 1.414;
+    background: #e8e8e8;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+
+  .canvas {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  .hiddenCanvas {
+    display: none;
+  }
+
+  .spinner {
+    width: 22px;
+    height: 22px;
+    border: 3px solid #ddd;
+    border-top-color: var(--color-primary);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+  }
+
+  .pdfFallback {
+    font-size: 11px;
+    font-weight: bold;
+    color: #888;
+    letter-spacing: 1px;
+  }
+
+  .info {
+    padding: 6px 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    font-size: 0.75rem;
+  }
+
+  .name {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+    font-weight: 500;
+  }
+
+  .size {
+    font-size: 0.65rem;
+    color: #999;
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

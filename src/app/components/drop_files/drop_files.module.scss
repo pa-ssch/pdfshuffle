@@ -1,0 +1,105 @@
+.dropareacontainer {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  .droparea {
+    background: linear-gradient(135deg, #fff8f4 0%, #f0f8ff 100%);
+    border: 2px dashed var(--color-primary);
+    border-radius: 20px;
+    flex: 1;
+    min-height: 320px;
+    width: 80vw;
+    transition: background 0.2s, border-color 0.2s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 10px;
+    overflow: hidden;
+
+    @media (max-width: 768px) {
+      width: 100%;
+      border-radius: 12px;
+      min-height: 250px;
+    }
+
+    .text {
+      padding: 10px;
+      font-size: 2em;
+      text-align: center;
+      flex-shrink: 0;
+
+      @media (max-width: 768px) {
+        font-size: 1.2em;
+      }
+    }
+
+    .clickLink {
+      background: none;
+      border: none;
+      color: var(--color-primary);
+      text-decoration: underline;
+      cursor: pointer;
+      font-size: inherit;
+      padding: 0;
+    }
+
+    .touchHint {
+      display: none;
+    }
+
+    @media (pointer: coarse) {
+      .desktopHint {
+        display: none;
+      }
+
+      .touchHint {
+        display: inline;
+      }
+    }
+
+    .cardGrid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      justify-content: center;
+      align-content: flex-start;
+      padding: 4px 16px 16px;
+      overflow-y: auto;
+      width: 100%;
+      flex: 1;
+    }
+  }
+
+  .dropping {
+    border: 2px solid var(--color-primary);
+    background: linear-gradient(135deg, #fff0ea 0%, #e8f4ff 100%);
+    position: relative;
+
+    .text {
+      pointer-events: none;
+    }
+
+    .text::before {
+      content: "Drop here";
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2em;
+      color: var(--color-primary);
+
+      @media (max-width: 768px) {
+        font-size: 1.2em;
+      }
+    }
+
+    .dropText,
+    .cardGrid {
+      visibility: hidden;
+      pointer-events: none;
+    }
+  }
+}
