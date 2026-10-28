@@ -139,11 +139,12 @@ export default function Home() {
       <main className={styles.main}>
         <Image
           className={styles.logo}
-          src="/logo.png"
+          src="/logo.webp"
           alt="PDF Shuffle Logo"
-          width={1023}
-          height={605}
+          width={720}
+          height={426}
           priority
+          fetchPriority="high"
         />
         <h1 className={styles.tagline}>
           Shuffle PDF pages — 100% in your browser, nothing uploaded.

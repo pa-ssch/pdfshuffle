@@ -1,6 +1,6 @@
 import { defineConfig, devices } from "@playwright/test";
 
-const PORT = 4173;
+const PORT = 4587;
 
 export default defineConfig({
   testDir: "./e2e",
@@ -20,7 +20,7 @@ export default defineConfig({
   webServer: {
     command: `node scripts/serve-static.mjs out`,
     url: `http://127.0.0.1:${PORT}/`,
-    reuseExistingServer: !process.env.CI,
+    reuseExistingServer: false,
     env: { PORT: String(PORT) },
   },
 });

@@ -1,12 +1,15 @@
 // Minimal static server that mimics GitHub Pages routing for the exported
 // site in out/: `/foo` -> `foo.html`, directories -> index.html, 404 -> 404.html.
-// Used by the Playwright end-to-end tests; zero dependencies on purpose.
+// Text responses are gzipped like GitHub Pages does, so Lighthouse numbers
+// measured locally are comparable. Used by the Playwright end-to-end tests;
+// zero dependencies on purpose.
 import { createServer } from "node:http";
 import { readFile, stat } from "node:fs/promises";
+import { gzipSync } from "node:zlib";
 import { extname, join, normalize, resolve } from "node:path";
 
 const root = resolve(process.argv[2] ?? "out");
-const port = Number(process.env.PORT ?? 4173);
+const port = Number(process.env.PORT ?? 4587);
 
 const TYPES = {
   ".html": "text/html; charset=utf-8",
@@ -55,11 +58,15 @@ createServer(async (req, res) => {
     status = 404;
   }
   try {
-    const body = await readFile(file);
-    res.writeHead(status, {
-      "content-type": TYPES[extname(file)] ?? "application/octet-stream",
-      "cache-control": "no-store",
-    });
+    let body = await readFile(file);
+    const type = TYPES[extname(file)] ?? "application/octet-stream";
+    const headers = { "content-type": type, "cache-control": "no-store" };
+    const compressible = /^(text\/|application\/(json|xml|manifest))/.test(type);
+    if (compressible && /\bgzip\b/.test(req.headers["accept-encoding"] ?? "")) {
+      body = gzipSync(body);
+      headers["content-encoding"] = "gzip";
+    }
+    res.writeHead(status, headers);
     res.end(body);
   } catch {
     res.writeHead(404).end("Not found");
