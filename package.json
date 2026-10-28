@@ -1,38 +1,46 @@
 {
-  "name": "app",
-  "version": "0.1.0",
+  "name": "pdfshuffle",
+  "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack",
-    "build": "next build",
-    "build:gh-pages": "next build",
+    "dev": "next dev --webpack",
+    "build": "next build --webpack",
     "start": "next start",
-    "lint": "next lint",
+    "lint": "eslint .",
     "test": "vitest run",
     "test:watch": "vitest",
-    "postinstall": "node -e \"const fs=require('fs'),p=require('path');fs.copyFileSync(p.join('node_modules','pdfjs-dist','build','pdf.worker.min.mjs'),p.join('public','pdf.worker.min.mjs'));\""
+    "postinstall": "node scripts/copy-pdf-worker.mjs",
+    "typecheck": "tsc --noEmit",
+    "prebuild": "node scripts/copy-pdf-worker.mjs",
+    "predev": "node scripts/copy-pdf-worker.mjs"
   },
   "dependencies": {
-    "next": "^16.1.6",
+    "next": "^16.4.3",
     "pdf-lib": "^1.17.1",
-    "pdfjs-dist": "^5.5.207",
-    "react": "^19.2.0",
-    "react-dom": "^19.2.0",
-    "sass": "^1.97.3"
+    "pdfjs-dist": "^6.4.299",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "sass": "^1.106.1"
   },
   "devDependencies": {
-    "@eslint/eslintrc": "^3",
-    "@testing-library/jest-dom": "^6.9.1",
-    "@testing-library/react": "^16.3.2",
-    "@testing-library/user-event": "^14.6.1",
-    "@types/node": "^20",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
-    "@vitejs/plugin-react": "^5.1.4",
-    "eslint": "^9",
-    "eslint-config-next": "^16.1.6",
-    "jsdom": "^28.1.0",
-    "typescript": "^5",
-    "vitest": "^4.0.18"
+    "@testing-library/jest-dom": "^7.0.1",
+    "@testing-library/react": "^16.3.3",
+    "@testing-library/user-event": "^14.6.8",
+    "@types/node": "^22.20.5",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^5.2.0",
+    "eslint": "^10.13.0",
+    "eslint-config-next": "^16.4.3",
+    "jsdom": "^30.1.3",
+    "typescript": "^5.9.3",
+    "vite": "^7.3.7",
+    "vitest": "^5.0.5"
+  },
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "overrides": {
+    "esbuild": "^0.28.1"
   }
 }
