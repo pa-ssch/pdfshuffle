@@ -30,7 +30,7 @@ export default function Impressum() {
 
         <h2>Kontakt</h2>
         <p>
-          E-Mail: <a href="mailto:level-100@9xb.de">level-100@9xb.de</a>
+          E-Mail: <a href="mailto:pdfshuffle@9xb.de">pdfshuffle@9xb.de</a>
         </p>
 
         <h2>Umsatzsteuer</h2>
