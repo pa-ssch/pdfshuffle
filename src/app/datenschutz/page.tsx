@@ -25,7 +25,7 @@ export default function Datenschutz() {
           <br />
           77815 Bühl, Deutschland
           <br />
-          E-Mail: <a href="mailto:info@9xb.de">info@9xb.de</a>
+          E-Mail: <a href="mailto:level-100@9xb.de">level-100@9xb.de</a>
         </p>
 
         <h2>2. Überblick</h2>
@@ -117,7 +117,7 @@ export default function Datenschutz() {
         </ul>
         <p>
           Zur Ausübung Ihrer Rechte genügt eine E-Mail an{" "}
-          <a href="mailto:info@9xb.de">info@9xb.de</a>.
+          <a href="mailto:level-100@9xb.de">level-100@9xb.de</a>.
         </p>
 
         <h2>8. Beschwerderecht bei einer Aufsichtsbehörde</h2>
