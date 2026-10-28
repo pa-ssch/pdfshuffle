@@ -17,6 +17,17 @@ for (const route of ROUTES) {
   });
 }
 
+test("legal pages are current: DDG instead of TMG, DPF notice, date", async ({
+  page,
+}) => {
+  await page.goto("/impressum");
+  await expect(page.getByText(/§ 5 DDG/)).toBeVisible();
+  await expect(page.getByText(/TMG/)).toHaveCount(0);
+  await page.goto("/datenschutz");
+  await expect(page.getByText(/Data Privacy Framework/)).toBeVisible();
+  await expect(page.getByText(/^Stand: /)).toBeVisible();
+});
+
 test("legal pages link back home and home links to them", async ({ page }) => {
   await page.goto("/");
   await page.getByRole("link", { name: "Impressum" }).click();
