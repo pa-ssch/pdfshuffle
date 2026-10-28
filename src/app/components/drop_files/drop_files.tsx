@@ -2,64 +2,69 @@
 
 import styles from "./drop_files.module.scss";
 import { useRef, useCallback, useState, useEffect } from "react";
-import { PdfFile } from "../../models/PdfFile";
+import { PdfFile, isPdfFile } from "../../models/PdfFile";
 import PdfCard from "../pdf_card/pdf_card";
 
 type DropFilesComponentProps = {
   onFilesChanged?: (files: PdfFile[]) => void;
 };
 
-const PDF_MIME = "application/pdf";
-
 export default function DropFilesComponent({
   onFilesChanged,
 }: DropFilesComponentProps) {
   const [files, setFiles] = useState<PdfFile[]>([]);
-  const [state, setState] = useState<"idle" | "dropping">("idle");
+  const [rejected, setRejected] = useState<string[]>([]);
+  const [pageCounts, setPageCounts] = useState<Record<string, number>>({});
+  const [dragging, setDragging] = useState(false);
+  // dragenter/dragleave fire for every child element; count them so the
+  // highlight does not flicker while moving over the cards.
+  const dragDepth = useRef(0);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     onFilesChanged?.(files);
   }, [files, onFilesChanged]);
 
-  const isDuplicate = useCallback(
-    (file: File) =>
-      files.some(
-        (f) =>
-          f.name === file.name &&
-          f.file.size === file.size &&
-          f.file.lastModified === file.lastModified,
-      ),
-    [files],
-  );
+  const addFiles = useCallback((incoming: File[]) => {
+    const notPdf = incoming.filter((file) => !isPdfFile(file));
+    setRejected(notPdf.map((f) => f.name));
 
-  const addFiles = useCallback(
-    (incoming: File[]) => {
-      const newFiles = incoming
-        .filter((file) => file.type === PDF_MIME)
-        .filter((file) => !isDuplicate(file))
-        .map((file) => new PdfFile(file));
-      if (newFiles.length === 0) return;
-      setFiles((prev) => [...prev, ...newFiles]);
-    },
-    [isDuplicate],
-  );
+    setFiles((prev) => {
+      const known = new Set(prev.map((f) => f.key));
+      const added: PdfFile[] = [];
+      for (const file of incoming) {
+        if (!isPdfFile(file)) continue;
+        const pdf = new PdfFile(file);
+        if (known.has(pdf.key)) continue;
+        known.add(pdf.key);
+        added.push(pdf);
+      }
+      return added.length === 0 ? prev : [...prev, ...added];
+    });
+  }, []);
+
+  const handleDragEnter = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    dragDepth.current += 1;
+    setDragging(true);
+  }, []);
 
   const handleDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {
-    setState("dropping");
     e.preventDefault();
   }, []);
 
   const handleDragLeave = useCallback((e: React.DragEvent<HTMLDivElement>) => {
-    setState("idle");
     e.preventDefault();
+    dragDepth.current = Math.max(0, dragDepth.current - 1);
+    if (dragDepth.current === 0) setDragging(false);
   }, []);
 
   const handleDrop = useCallback(
     (e: React.DragEvent<HTMLDivElement>) => {
       e.preventDefault();
+      dragDepth.current = 0;
+      setDragging(false);
       addFiles(Array.from(e.dataTransfer.files));
-      setState("idle");
     },
     [addFiles],
   );
@@ -69,33 +74,49 @@ export default function DropFilesComponent({
   const handleUpload = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       addFiles(Array.from(e.target.files ?? []));
+      // Reset so that re-selecting the same file (e.g. after removing it)
+      // triggers a change event again.
+      e.target.value = "";
     },
     [addFiles],
   );
 
-  const removeDocument = useCallback(
-    (file: PdfFile) => {
-      setFiles((prev) => prev.filter((f) => f !== file));
-    },
-    [],
+  const removeDocument = useCallback((file: PdfFile) => {
+    setFiles((prev) => prev.filter((f) => f !== file));
+    setPageCounts((prev) => {
+      if (!(file.key in prev)) return prev;
+      const next = { ...prev };
+      delete next[file.key];
+      return next;
+    });
+  }, []);
+
+  const handlePageCount = useCallback((file: PdfFile, count: number) => {
+    setPageCounts((prev) =>
+      prev[file.key] === count ? prev : { ...prev, [file.key]: count },
+    );
+  }, []);
+
+  const countedFiles = files.filter((f) => f.key in pageCounts);
+  const totalPages = countedFiles.reduce(
+    (sum, f) => sum + pageCounts[f.key],
+    0,
   );
+  const allCounted = countedFiles.length === files.length;
 
   return (
     <div className={styles.dropareacontainer}>
       <div
-        className={[
-          styles.droparea,
-          state === "dropping" ? styles.dropping : "",
-        ].join(" ")}
+        className={[styles.droparea, dragging ? styles.dropping : ""].join(" ")}
+        onDragEnter={handleDragEnter}
         onDragOver={handleDragOver}
-        onDragEnter={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
       >
         <div className={styles.text}>
           <div className={styles.dropText}>
             <span className={styles.desktopHint}>
-              Drop files in this area or&nbsp;
+              Drop PDF files in this area or&nbsp;
               <button
                 type="button"
                 className={styles.clickLink}
@@ -118,19 +139,35 @@ export default function DropFilesComponent({
         <div className={styles.cardGrid}>
           {files.map((f) => (
             <PdfCard
-              key={`${f.name}-${f.file.lastModified}-${f.file.size}`}
+              key={f.key}
               pdfFile={f}
               onRemove={removeDocument}
+              onPageCount={handlePageCount}
             />
           ))}
         </div>
+
+        {files.length > 0 && (
+          <p className={styles.summary} role="status">
+            {files.length} {files.length === 1 ? "file" : "files"}
+            {allCounted
+              ? ` · ${totalPages} ${totalPages === 1 ? "page" : "pages"}`
+              : " · counting pages…"}
+          </p>
+        )}
       </div>
+
+      {rejected.length > 0 && (
+        <p className={styles.rejected} role="alert">
+          Skipped (not a PDF): {rejected.join(", ")}
+        </p>
+      )}
 
       <input
         hidden
         type="file"
         ref={fileInputRef}
-        accept="application/pdf"
+        accept="application/pdf,.pdf"
         multiple
         onChange={handleUpload}
       />

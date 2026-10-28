@@ -80,6 +80,12 @@ describe("Home page", () => {
       expect(screen.getByAltText("PDF Shuffle Logo")).toBeInTheDocument();
     });
 
+    it("has exactly one h1", async () => {
+      const { default: Home } = await import("./page");
+      render(<Home />);
+      expect(screen.getAllByRole("heading", { level: 1 })).toHaveLength(1);
+    });
+
     it("renders the shuffle button disabled", async () => {
       const { default: Home } = await import("./page");
       render(<Home />);
@@ -177,7 +183,8 @@ describe("Home page", () => {
       });
     });
 
-    it("creates an object URL and triggers download", async () => {
+    it("creates an object URL and revokes it only after a delay", async () => {
+      vi.useFakeTimers({ shouldAdvanceTime: true });
       const { default: Home } = await import("./page");
       render(<Home />);
 
@@ -188,7 +195,35 @@ describe("Home page", () => {
 
       await waitFor(() => {
         expect(URL.createObjectURL).toHaveBeenCalledTimes(1);
-        expect(URL.revokeObjectURL).toHaveBeenCalledWith("blob:mock");
+      });
+      // Revoking right after click() aborts downloads in Firefox/Safari.
+      expect(URL.revokeObjectURL).not.toHaveBeenCalled();
+
+      await act(async () => {
+        vi.advanceTimersByTime(61_000);
+      });
+      expect(URL.revokeObjectURL).toHaveBeenCalledWith("blob:mock");
+      vi.useRealTimers();
+    });
+
+    it("offers to shuffle again while the success message is shown", async () => {
+      const { default: Home } = await import("./page");
+      render(<Home />);
+
+      await uploadFiles([makePdfFile("test.pdf")]);
+      await userEvent.click(
+        screen.getByRole("button", { name: /shuffle.*download/i }),
+      );
+
+      await waitFor(() =>
+        expect(screen.getByText(/check your downloads/i)).toBeInTheDocument(),
+      );
+      const again = screen.getByRole("button", { name: /shuffle again/i });
+      expect(again).toBeEnabled();
+
+      await userEvent.click(again);
+      await waitFor(() => {
+        expect(URL.createObjectURL).toHaveBeenCalledTimes(2);
       });
     });
 
@@ -236,6 +271,45 @@ describe("Home page", () => {
   });
 
   describe("error handling", () => {
+    it("names password-protected files specifically", async () => {
+      const { PDFDocument } = await import("pdf-lib");
+      vi.mocked(PDFDocument.load).mockRejectedValueOnce(
+        new Error("Input document to `PDFDocument.load` is encrypted."),
+      );
+
+      const { default: Home } = await import("./page");
+      render(<Home />);
+
+      await uploadFiles([makePdfFile("secret.pdf")]);
+      await userEvent.click(
+        screen.getByRole("button", { name: /shuffle.*download/i }),
+      );
+
+      await waitFor(() => {
+        const alert = screen.getByRole("alert");
+        expect(alert).toHaveTextContent(/secret\.pdf/);
+        expect(alert).toHaveTextContent(/password-protected/i);
+      });
+    });
+
+    it("shows a generic error when saving fails", async () => {
+      mockSave.mockRejectedValueOnce(new Error("boom"));
+      const { default: Home } = await import("./page");
+      render(<Home />);
+
+      await uploadFiles([makePdfFile("test.pdf")]);
+      await userEvent.click(
+        screen.getByRole("button", { name: /shuffle.*download/i }),
+      );
+
+      await waitFor(() => {
+        expect(screen.getByRole("alert")).toHaveTextContent(/went wrong/i);
+        expect(
+          screen.getByRole("button", { name: /shuffle.*download/i }),
+        ).toBeEnabled();
+      });
+    });
+
     it("shows error message when a file fails to load", async () => {
       const { PDFDocument } = await import("pdf-lib");
       vi.mocked(PDFDocument.load).mockRejectedValueOnce(

@@ -103,3 +103,17 @@
     }
   }
 }
+
+.summary {
+  margin: 0 0 10px;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  flex-shrink: 0;
+}
+
+.rejected {
+  margin: 0 0 10px;
+  font-size: 0.9rem;
+  color: var(--color-error);
+  text-align: center;
+}

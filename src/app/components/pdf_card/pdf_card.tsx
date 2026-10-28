@@ -7,23 +7,30 @@ import { PdfFile } from "../../models/PdfFile";
 type PdfCardProps = {
   pdfFile: PdfFile;
   onRemove: (file: PdfFile) => void;
+  onPageCount?: (file: PdfFile, count: number) => void;
 };
 
 let workerInitialized = false;
 
-function formatFileSize(bytes: number): string {
+export function formatFileSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-export default function PdfCard({ pdfFile, onRemove }: PdfCardProps) {
+export default function PdfCard({
+  pdfFile,
+  onRemove,
+  onPageCount,
+}: PdfCardProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [thumbnailReady, setThumbnailReady] = useState(false);
   const [thumbnailError, setThumbnailError] = useState(false);
+  const [pageCount, setPageCount] = useState<number | null>(null);
 
   useEffect(() => {
     let cancelled = false;
+    let task: { destroy(): Promise<void> } | null = null;
 
     const renderThumbnail = async () => {
       try {
@@ -36,10 +43,15 @@ export default function PdfCard({ pdfFile, onRemove }: PdfCardProps) {
         const arrayBuffer = await pdfFile.file.arrayBuffer();
         if (cancelled) return;
 
-        const pdf = await getDocument({ data: arrayBuffer }).promise;
+        const loadingTask = getDocument({ data: arrayBuffer });
+        task = loadingTask;
+        const doc = await loadingTask.promise;
         if (cancelled) return;
 
-        const page = await pdf.getPage(1);
+        setPageCount(doc.numPages);
+        onPageCount?.(pdfFile, doc.numPages);
+
+        const page = await doc.getPage(1);
         if (cancelled) return;
 
         const canvas = canvasRef.current;
@@ -56,6 +68,9 @@ export default function PdfCard({ pdfFile, onRemove }: PdfCardProps) {
         if (!cancelled) setThumbnailReady(true);
       } catch {
         if (!cancelled) setThumbnailError(true);
+      } finally {
+        // Free the worker-side document; the rendered canvas stays.
+        task?.destroy().catch(() => {});
       }
     };
 
@@ -64,7 +79,7 @@ export default function PdfCard({ pdfFile, onRemove }: PdfCardProps) {
     return () => {
       cancelled = true;
     };
-  }, [pdfFile]);
+  }, [pdfFile, onPageCount]);
 
   return (
     <div className={styles.card}>
@@ -90,7 +105,11 @@ export default function PdfCard({ pdfFile, onRemove }: PdfCardProps) {
         <span className={styles.name} title={pdfFile.name}>
           {pdfFile.name}
         </span>
-        <span className={styles.size}>{formatFileSize(pdfFile.file.size)}</span>
+        <span className={styles.size}>
+          {formatFileSize(pdfFile.file.size)}
+          {pageCount !== null &&
+            ` · ${pageCount} ${pageCount === 1 ? "page" : "pages"}`}
+        </span>
       </div>
     </div>
   );

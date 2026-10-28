@@ -6,18 +6,44 @@ import styles from "./page.module.scss";
 import DropFilesComponent from "./components/drop_files/drop_files";
 import type { PDFPage } from "pdf-lib";
 import { PdfFile } from "./models/PdfFile";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 
 type AppState = "idle" | "ready" | "working" | "success";
 
+const SUCCESS_DISPLAY_MS = 5000;
+// Firefox and Safari may still be reading the blob when the click handler
+// returns; revoking immediately can abort the download.
+const REVOKE_DELAY_MS = 60_000;
+
 function stateForFiles(files: PdfFile[]): AppState {
   return files.length > 0 ? "ready" : "idle";
+}
+
+function isEncryptedError(ex: unknown): boolean {
+  const message = ex instanceof Error ? ex.message : String(ex);
+  return /encrypt/i.test(message);
 }
 
 export default function Home() {
   const [errorText, setErrorText] = useState("");
   const [state, setState] = useState<AppState>("idle");
   const [files, setFiles] = useState<PdfFile[]>([]);
+  const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
+
+  useEffect(() => {
+    const pending = timers.current;
+    return () => {
+      pending.forEach(clearTimeout);
+    };
+  }, []);
+
+  const later = useCallback((fn: () => void, ms: number) => {
+    const id = setTimeout(() => {
+      timers.current = timers.current.filter((t) => t !== id);
+      fn();
+    }, ms);
+    timers.current.push(id);
+  }, []);
 
   const handleOnFilesChanged = useCallback((f: PdfFile[]) => {
     setFiles(f);
@@ -30,7 +56,8 @@ export default function Home() {
     const { PDFDocument } = await import("pdf-lib");
     const pages: PDFPage[] = [];
     const shuffledDoc = await PDFDocument.create();
-    const failedFiles: string[] = [];
+    const unreadable: string[] = [];
+    const encrypted: string[] = [];
 
     for (const file of files) {
       try {
@@ -43,36 +70,44 @@ export default function Home() {
         );
       } catch (ex) {
         console.error(ex, file);
-        failedFiles.push(file.name);
+        (isEncryptedError(ex) ? encrypted : unreadable).push(file.name);
       }
     }
 
-    if (failedFiles.length > 0) {
-      setErrorText(
-        `⚠ ${failedFiles.join(", ")} could not be read — is it a valid PDF?`,
-      );
+    if (unreadable.length > 0 || encrypted.length > 0) {
+      const problems: string[] = [];
+      if (encrypted.length > 0) {
+        problems.push(
+          `${encrypted.join(", ")} is password-protected — remove the protection first.`,
+        );
+      }
+      if (unreadable.length > 0) {
+        problems.push(
+          `${unreadable.join(", ")} could not be read — is it a valid PDF?`,
+        );
+      }
+      setErrorText(`⚠ ${problems.join(" ")}`);
       setState(stateForFiles(files));
       return null;
     }
 
+    // Inside-out Fisher–Yates: every permutation is equally likely.
     pages.forEach((page, index) =>
       shuffledDoc.insertPage(Math.floor(Math.random() * (index + 1)), page),
     );
 
     const pdfBytes = await shuffledDoc.save();
 
-    const url = URL.createObjectURL(
+    return URL.createObjectURL(
       new Blob([new Uint8Array(pdfBytes)], { type: "application/pdf" }),
     );
-    return url;
   };
 
   const shuffleAndDownload = async () => {
-    if (state !== "ready") return;
+    if (state !== "ready" && state !== "success") return;
 
-    let url: string | null = null;
     try {
-      url = await buildShuffledPdf();
+      const url = await buildShuffledPdf();
       if (!url) return;
 
       const a = document.createElement("a");
@@ -81,16 +116,18 @@ export default function Home() {
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
+      later(() => URL.revokeObjectURL(url), REVOKE_DELAY_MS);
 
       setState("success");
-      setTimeout(() => {
-        setState(stateForFiles(files));
-      }, 5000);
+      later(() => {
+        setState((current) =>
+          current === "success" ? stateForFiles(files) : current,
+        );
+      }, SUCCESS_DISPLAY_MS);
     } catch (ex) {
       console.error(ex);
+      setErrorText("⚠ Something went wrong while building the PDF. Please try again.");
       setState(stateForFiles(files));
-    } finally {
-      if (url) URL.revokeObjectURL(url);
     }
   };
 
@@ -102,15 +139,15 @@ export default function Home() {
       <main className={styles.main}>
         <Image
           className={styles.logo}
-          src="logo.png"
+          src="/logo.png"
           alt="PDF Shuffle Logo"
-          width={180}
-          height={180}
+          width={1023}
+          height={605}
           priority
         />
-        <p className={styles.tagline}>
+        <h1 className={styles.tagline}>
           Shuffle PDF pages — 100% in your browser, nothing uploaded.
-        </p>
+        </h1>
         <h2 className={styles.stepLabel}>
           <span className={styles.stepBadge}>1</span> Add your PDF files
         </h2>
@@ -128,13 +165,11 @@ export default function Home() {
             {errorText}
           </span>
           <button
-            className={
-              isWorking || isSuccess ? styles.hidden : styles.shufflebutton
-            }
-            disabled={state !== "ready"}
+            className={isWorking ? styles.hidden : styles.shufflebutton}
+            disabled={state !== "ready" && state !== "success"}
             onClick={shuffleAndDownload}
           >
-            Shuffle &amp; Download PDF
+            {isSuccess ? "Shuffle again & Download PDF" : "Shuffle & Download PDF"}
           </button>
           <div
             className={isWorking ? styles.loader : styles.hidden}
