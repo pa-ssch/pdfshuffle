@@ -14,7 +14,10 @@ export default function DropFilesComponent({
 }: DropFilesComponentProps) {
   const [files, setFiles] = useState<PdfFile[]>([]);
   const [rejected, setRejected] = useState<string[]>([]);
-  const [pageCounts, setPageCounts] = useState<Record<string, number>>({});
+  // number = pages reported by pdf.js, null = file could not be parsed
+  const [pageCounts, setPageCounts] = useState<Record<string, number | null>>(
+    {},
+  );
   const [dragging, setDragging] = useState(false);
   // dragenter/dragleave fire for every child element; count them so the
   // highlight does not flicker while moving over the cards.
@@ -26,14 +29,18 @@ export default function DropFilesComponent({
   }, [files, onFilesChanged]);
 
   const addFiles = useCallback((incoming: File[]) => {
-    const notPdf = incoming.filter((file) => !isPdfFile(file));
-    setRejected(notPdf.map((f) => f.name));
+    const pdfs: File[] = [];
+    const notPdf: string[] = [];
+    for (const file of incoming) {
+      if (isPdfFile(file)) pdfs.push(file);
+      else notPdf.push(file.name);
+    }
+    setRejected(notPdf);
 
     setFiles((prev) => {
       const known = new Set(prev.map((f) => f.key));
       const added: PdfFile[] = [];
-      for (const file of incoming) {
-        if (!isPdfFile(file)) continue;
+      for (const file of pdfs) {
         const pdf = new PdfFile(file);
         if (known.has(pdf.key)) continue;
         known.add(pdf.key);
@@ -91,7 +98,7 @@ export default function DropFilesComponent({
     });
   }, []);
 
-  const handlePageCount = useCallback((file: PdfFile, count: number) => {
+  const handlePageCount = useCallback((file: PdfFile, count: number | null) => {
     setPageCounts((prev) =>
       prev[file.key] === count ? prev : { ...prev, [file.key]: count },
     );
@@ -99,9 +106,10 @@ export default function DropFilesComponent({
 
   const countedFiles = files.filter((f) => f.key in pageCounts);
   const totalPages = countedFiles.reduce(
-    (sum, f) => sum + pageCounts[f.key],
+    (sum, f) => sum + (pageCounts[f.key] ?? 0),
     0,
   );
+  const unreadable = countedFiles.filter((f) => pageCounts[f.key] === null).length;
   const allCounted = countedFiles.length === files.length;
 
   return (
@@ -153,6 +161,7 @@ export default function DropFilesComponent({
             {allCounted
               ? ` · ${totalPages} ${totalPages === 1 ? "page" : "pages"}`
               : " · counting pages…"}
+            {unreadable > 0 && ` · ${unreadable} unreadable`}
           </p>
         )}
       </div>

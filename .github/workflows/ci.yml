@@ -31,9 +31,6 @@ jobs:
       - name: Install
         run: npm ci
 
-      - name: Audit production dependencies
-        run: npm audit --omit=dev --audit-level=high
-
       - name: Lint
         run: npm run lint
 
@@ -65,6 +62,26 @@ jobs:
         uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         with:
           path: out
+
+  audit:
+    # Informational: a new upstream advisory must not block hotfix deploys.
+    # Dependabot opens the update PR; this job just makes the state visible.
+    name: npm audit (production deps)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    continue-on-error: true
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Setup Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - name: Install
+        run: npm ci
+      - name: Audit
+        run: npm audit --omit=dev --audit-level=high
 
   deploy:
     name: Deploy to GitHub Pages

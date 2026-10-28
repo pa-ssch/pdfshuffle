@@ -19,30 +19,19 @@ function stateForFiles(files: PdfFile[]): AppState {
   return files.length > 0 ? "ready" : "idle";
 }
 
-function isEncryptedError(ex: unknown): boolean {
-  const message = ex instanceof Error ? ex.message : String(ex);
-  return /encrypt/i.test(message);
-}
-
 export default function Home() {
   const [errorText, setErrorText] = useState("");
   const [state, setState] = useState<AppState>("idle");
   const [files, setFiles] = useState<PdfFile[]>([]);
-  const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
+  // Only the success-message timer touches component state, so only it must
+  // be cancelled on unmount. Blob revocation timers keep running: cancelling
+  // them would leak the blob, and firing after unmount is harmless.
+  const successTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    const pending = timers.current;
     return () => {
-      pending.forEach(clearTimeout);
+      if (successTimer.current) clearTimeout(successTimer.current);
     };
-  }, []);
-
-  const later = useCallback((fn: () => void, ms: number) => {
-    const id = setTimeout(() => {
-      timers.current = timers.current.filter((t) => t !== id);
-      fn();
-    }, ms);
-    timers.current.push(id);
   }, []);
 
   const handleOnFilesChanged = useCallback((f: PdfFile[]) => {
@@ -53,7 +42,7 @@ export default function Home() {
 
   const buildShuffledPdf = async (): Promise<string | null> => {
     setState("working");
-    const { PDFDocument } = await import("pdf-lib");
+    const { PDFDocument, EncryptedPDFError } = await import("pdf-lib");
     const pages: PDFPage[] = [];
     const shuffledDoc = await PDFDocument.create();
     const unreadable: string[] = [];
@@ -70,7 +59,9 @@ export default function Home() {
         );
       } catch (ex) {
         console.error(ex, file);
-        (isEncryptedError(ex) ? encrypted : unreadable).push(file.name);
+        (ex instanceof EncryptedPDFError ? encrypted : unreadable).push(
+          file.name,
+        );
       }
     }
 
@@ -116,10 +107,12 @@ export default function Home() {
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
-      later(() => URL.revokeObjectURL(url), REVOKE_DELAY_MS);
+      setTimeout(() => URL.revokeObjectURL(url), REVOKE_DELAY_MS);
 
       setState("success");
-      later(() => {
+      if (successTimer.current) clearTimeout(successTimer.current);
+      successTimer.current = setTimeout(() => {
+        successTimer.current = null;
         setState((current) =>
           current === "success" ? stateForFiles(files) : current,
         );

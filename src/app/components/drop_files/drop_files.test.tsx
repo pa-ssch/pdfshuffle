@@ -5,7 +5,11 @@ import DropFilesComponent from "./drop_files";
 import { PdfFile } from "../../models/PdfFile";
 
 // Mock PdfCard to avoid pdfjs-dist in unit tests
-const MOCK_PAGE_COUNTS: Record<string, number> = { "a.pdf": 3, "b.pdf": 4 };
+const MOCK_PAGE_COUNTS: Record<string, number | null> = {
+  "a.pdf": 3,
+  "b.pdf": 4,
+  "broken.pdf": null,
+};
 
 vi.mock("../pdf_card/pdf_card", () => ({
   default: ({
@@ -15,11 +19,16 @@ vi.mock("../pdf_card/pdf_card", () => ({
   }: {
     pdfFile: PdfFile;
     onRemove: (f: PdfFile) => void;
-    onPageCount?: (f: PdfFile, count: number) => void;
+    onPageCount?: (f: PdfFile, count: number | null) => void;
   }) => (
     <div
       data-testid="pdf-card"
-      ref={() => onPageCount?.(pdfFile, MOCK_PAGE_COUNTS[pdfFile.name] ?? 1)}
+      ref={() =>
+        onPageCount?.(
+          pdfFile,
+          pdfFile.name in MOCK_PAGE_COUNTS ? MOCK_PAGE_COUNTS[pdfFile.name] : 1,
+        )
+      }
     >
       <span>{pdfFile.name}</span>
       <button
@@ -350,6 +359,24 @@ describe("DropFilesComponent", () => {
       await waitFor(() => {
         expect(screen.getByRole("status")).toHaveTextContent(
           "2 files · 7 pages",
+        );
+      });
+    });
+
+    it("finishes counting and flags unreadable files", async () => {
+      render(<DropFilesComponent />);
+      const input = document.querySelector(
+        'input[type="file"]',
+      ) as HTMLInputElement;
+
+      await userEvent.upload(input, [
+        makePdfFile("a.pdf", 100, 1000),
+        makePdfFile("broken.pdf", 200, 2000),
+      ]);
+
+      await waitFor(() => {
+        expect(screen.getByRole("status")).toHaveTextContent(
+          "2 files · 3 pages · 1 unreadable",
         );
       });
     });

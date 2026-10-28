@@ -7,6 +7,9 @@
 
     h1 {
       margin-bottom: 24px;
+      // "Datenschutzerklärung" is one unbreakable word: scale it on phones
+      font-size: clamp(1.5rem, 7.5vw, 2rem);
+      overflow-wrap: anywhere;
     }
 
     h2 {
@@ -17,6 +20,8 @@
     p,
     ul {
       line-height: 1.6;
+      // long URLs and e-mail addresses must wrap on narrow phones
+      overflow-wrap: anywhere;
     }
 
     ul {
@@ -33,6 +38,11 @@
 
     .back {
       margin-top: 48px;
+
+      a {
+        display: inline-block;
+        padding: 12px 0;
+      }
     }
 
     .note {

@@ -22,8 +22,8 @@ $card-width: 130px;
     position: absolute;
     top: 5px;
     right: 5px;
-    width: 22px;
-    height: 22px;
+    width: 26px; // WCAG 2.2 minimum target size is 24px
+    height: 26px;
     border-radius: 50%;
     background: rgba(0, 0, 0, 0.55);
     color: white;
@@ -98,7 +98,7 @@ $card-width: 130px;
     display: flex;
     flex-direction: column;
     gap: 2px;
-    font-size: 0.75rem;
+    font-size: 0.8rem;
   }
 
   .name {
@@ -110,8 +110,12 @@ $card-width: 130px;
   }
 
   .size {
-    font-size: 0.65rem;
-    color: #999;
+    font-size: 0.75rem;
+    color: var(--color-text-light);
+  }
+
+  .unreadable {
+    color: var(--color-error);
   }
 }
 

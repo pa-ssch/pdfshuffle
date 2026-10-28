@@ -3,9 +3,12 @@
 // the logo: node scripts/make-logo-webp.mjs
 import { chromium } from "@playwright/test";
 import { readFileSync, writeFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 
+const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const WIDTH = 720; // rendered at most ~360 CSS px wide -> 2x for retina
-const src = readFileSync("assets/logo.png").toString("base64");
+const src = readFileSync(join(root, "assets", "logo.png")).toString("base64");
 const browser = await chromium.launch();
 const page = await browser.newPage();
 const dataUrl = await page.evaluate(
@@ -23,5 +26,5 @@ const dataUrl = await page.evaluate(
 );
 await browser.close();
 const out = Buffer.from(dataUrl.split(",")[1], "base64");
-writeFileSync("public/logo.webp", out);
+writeFileSync(join(root, "public", "logo.webp"), out);
 console.log(`public/logo.webp: ${out.length} bytes, ${WIDTH}px wide`);

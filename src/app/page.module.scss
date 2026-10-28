@@ -164,6 +164,9 @@
     a {
       color: var(--color-text-light);
       text-decoration: none;
+      // >= 44px tap target on touch devices without changing the visual rhythm
+      padding: 14px 8px;
+      margin: -14px -8px;
 
       &:hover {
         color: var(--color-primary);

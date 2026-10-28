@@ -112,6 +112,7 @@ test.describe("error handling", () => {
       { name: "broken.pdf", buffer: Buffer.from("%PDF-1.7 this is not a pdf") },
     ]);
     await expect(page.getByText("broken.pdf")).toBeVisible();
+    await expect(page.getByRole("status")).toHaveText("1 file · 0 pages · 1 unreadable");
     await page.getByRole("button", { name: /shuffle/i }).click();
     await expect(page.getByRole("alert").filter({ hasText: /could not be read/i })).toContainText(
       "broken.pdf",

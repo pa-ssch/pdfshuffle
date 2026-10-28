@@ -66,11 +66,15 @@ describe("PdfCard", () => {
     await waitFor(() => expect(mockDestroy).toHaveBeenCalled());
   });
 
-  it("falls back to a placeholder when the PDF cannot be rendered", async () => {
+  it("falls back to a placeholder and reports null when the PDF cannot be rendered", async () => {
     mockLoadFails = true;
-    render(<PdfCard pdfFile={makePdfFile("broken.pdf")} onRemove={() => {}} />);
+    const onPageCount = vi.fn();
+    const file = makePdfFile("broken.pdf");
+    render(<PdfCard pdfFile={file} onRemove={() => {}} onPageCount={onPageCount} />);
     await waitFor(() => expect(screen.getByText("PDF")).toBeInTheDocument());
     expect(screen.queryByText(/pages/)).not.toBeInTheDocument();
+    expect(screen.getByText(/unreadable/)).toBeInTheDocument();
+    expect(onPageCount).toHaveBeenCalledWith(file, null);
   });
 
   it("calls onRemove with its file", async () => {

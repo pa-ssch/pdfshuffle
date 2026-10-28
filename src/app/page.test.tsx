@@ -30,12 +30,15 @@ const mockShuffledDoc = {
   save: mockSave,
 };
 
+class MockEncryptedPDFError extends Error {}
+
 vi.mock("pdf-lib", () => ({
   PDFDocument: {
     create: vi.fn().mockResolvedValue(mockShuffledDoc),
     load: vi.fn().mockResolvedValue({ getPageCount: mockGetPageCount }),
   },
   PDFPage: class {},
+  EncryptedPDFError: MockEncryptedPDFError,
 }));
 
 // --- Test helpers ---
@@ -274,7 +277,7 @@ describe("Home page", () => {
     it("names password-protected files specifically", async () => {
       const { PDFDocument } = await import("pdf-lib");
       vi.mocked(PDFDocument.load).mockRejectedValueOnce(
-        new Error("Input document to `PDFDocument.load` is encrypted."),
+        new MockEncryptedPDFError("Input document is encrypted."),
       );
 
       const { default: Home } = await import("./page");
@@ -391,6 +394,27 @@ describe("Home page", () => {
           screen.queryByText(/could not be read/i),
         ).not.toBeInTheDocument(),
       );
+    });
+
+    it("does not report a corrupt file whose message mentions /Encrypt as protected", async () => {
+      const { PDFDocument } = await import("pdf-lib");
+      vi.mocked(PDFDocument.load).mockRejectedValueOnce(
+        new Error("Failed to parse /Encrypt dictionary"),
+      );
+
+      const { default: Home } = await import("./page");
+      render(<Home />);
+
+      await uploadFiles([makePdfFile("odd.pdf")]);
+      await userEvent.click(
+        screen.getByRole("button", { name: /shuffle.*download/i }),
+      );
+
+      await waitFor(() => {
+        const alert = screen.getByRole("alert");
+        expect(alert).toHaveTextContent(/could not be read/i);
+        expect(alert).not.toHaveTextContent(/password/i);
+      });
     });
 
     it("re-enables button after error (files still loaded)", async () => {

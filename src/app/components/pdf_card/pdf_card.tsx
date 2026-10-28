@@ -7,7 +7,8 @@ import { PdfFile } from "../../models/PdfFile";
 type PdfCardProps = {
   pdfFile: PdfFile;
   onRemove: (file: PdfFile) => void;
-  onPageCount?: (file: PdfFile, count: number) => void;
+  /** Called once per file: page count, or null if pdf.js cannot parse it. */
+  onPageCount?: (file: PdfFile, count: number | null) => void;
 };
 
 let workerInitialized = false;
@@ -67,7 +68,10 @@ export default function PdfCard({
         await page.render({ canvasContext: ctx, viewport, canvas }).promise;
         if (!cancelled) setThumbnailReady(true);
       } catch {
-        if (!cancelled) setThumbnailError(true);
+        if (!cancelled) {
+          setThumbnailError(true);
+          onPageCount?.(pdfFile, null);
+        }
       } finally {
         // Free the worker-side document; the rendered canvas stays.
         task?.destroy().catch(() => {});
@@ -109,6 +113,9 @@ export default function PdfCard({
           {formatFileSize(pdfFile.file.size)}
           {pageCount !== null &&
             ` · ${pageCount} ${pageCount === 1 ? "page" : "pages"}`}
+          {thumbnailError && (
+            <span className={styles.unreadable}> · unreadable</span>
+          )}
         </span>
       </div>
     </div>

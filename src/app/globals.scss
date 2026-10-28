@@ -9,8 +9,21 @@
   --color-error: #c62828;
 }
 
+html {
+  // guards against sub-pixel rounding producing a 1px horizontal scrollbar
+  overflow-x: clip;
+}
+
 body {
   margin: 0 20px;
   font-family: var(--font-geist-sans), sans-serif;
   background-color: #fff;
+  color: var(--color-text);
+}
+
+// Visible keyboard focus for every interactive element (WCAG 2.4.7)
+:focus-visible {
+  outline: 3px solid var(--color-primary);
+  outline-offset: 3px;
+  border-radius: 4px;
 }

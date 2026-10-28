@@ -6,7 +6,7 @@
 import { createServer } from "node:http";
 import { readFile, stat } from "node:fs/promises";
 import { gzipSync } from "node:zlib";
-import { extname, join, normalize, resolve } from "node:path";
+import { extname, join, normalize, resolve, sep } from "node:path";
 
 const root = resolve(process.argv[2] ?? "out");
 const port = Number(process.env.PORT ?? 4587);
@@ -18,6 +18,9 @@ const TYPES = {
   ".css": "text/css; charset=utf-8",
   ".json": "application/json; charset=utf-8",
   ".png": "image/png",
+  ".webp": "image/webp",
+  ".jpg": "image/jpeg",
+  ".woff": "font/woff",
   ".ico": "image/x-icon",
   ".svg": "image/svg+xml",
   ".txt": "text/plain; charset=utf-8",
@@ -40,7 +43,7 @@ async function resolvePath(urlPath) {
     "",
   );
   const base = join(root, clean);
-  if (!base.startsWith(root)) return null;
+  if (base !== root && !base.startsWith(root + sep)) return null;
   const candidates = [
     base,
     join(base, "index.html"),

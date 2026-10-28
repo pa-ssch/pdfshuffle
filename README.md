@@ -42,7 +42,8 @@ npm test             # unit tests
 npm run build        # static export to out/
 npm run test:e2e     # Playwright against out/ (run `npx playwright install` once)
 npm run serve        # serve out/ locally like GitHub Pages
-STRESS=1 npm run test:e2e -- e2e/stress   # opt-in load test with ~110 MB of scan PDFs
+STRESS=1 npm run test:e2e -- e2e/stress         # opt-in load test with ~110 MB of scan PDFs
+VISUAL=1 npm run test:e2e -- e2e/visual-audit   # screenshots + layout/a11y checks on 6 viewports
 ```
 
 ## Deployment
