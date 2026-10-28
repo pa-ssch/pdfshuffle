@@ -3,9 +3,13 @@ import Link from "next/link";
 
 export default function Impressum() {
   return (
-    <div className={styles.page}>
+    <div className={styles.page} lang="de">
       <main className={styles.main}>
         <h1>Impressum</h1>
+        <p className={styles.note} lang="en">
+          This page is the legally required German site notice and privacy
+          policy of PDF Shuffle. In short: your files never leave your browser.
+        </p>
 
         <h2>Angaben gemäß § 5 TMG</h2>
         <p>
@@ -47,7 +51,7 @@ export default function Impressum() {
         </p>
 
         <p className={styles.back}>
-          <Link href="/">← Back</Link>
+          <Link href="/">← Zurück zur Startseite</Link>
         </p>
       </main>
     </div>

@@ -34,5 +34,12 @@
     .back {
       margin-top: 48px;
     }
+
+    .note {
+      color: var(--color-text-muted);
+      font-style: italic;
+      border-left: 3px solid var(--color-primary);
+      padding-left: 12px;
+    }
   }
 }

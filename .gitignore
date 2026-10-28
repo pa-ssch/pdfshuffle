@@ -42,3 +42,8 @@ next-env.d.ts
 
 # generated assets (copied via postinstall)
 /public/pdf.worker.min.mjs
+
+# playwright
+/test-results/
+/playwright-report/
+/blob-report/

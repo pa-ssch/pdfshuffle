@@ -12,7 +12,9 @@
     "postinstall": "node scripts/copy-pdf-worker.mjs",
     "typecheck": "tsc --noEmit",
     "prebuild": "node scripts/copy-pdf-worker.mjs",
-    "predev": "node scripts/copy-pdf-worker.mjs"
+    "predev": "node scripts/copy-pdf-worker.mjs",
+    "test:e2e": "playwright test",
+    "serve": "node scripts/serve-static.mjs out"
   },
   "dependencies": {
     "next": "^16.4.3",
@@ -23,6 +25,8 @@
     "sass": "^1.106.1"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.14.0",
+    "@playwright/test": "^1.64.1",
     "@testing-library/jest-dom": "^7.0.1",
     "@testing-library/react": "^16.3.3",
     "@testing-library/user-event": "^14.6.8",

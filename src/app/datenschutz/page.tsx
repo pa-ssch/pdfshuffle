@@ -3,9 +3,15 @@ import Link from "next/link";
 
 export default function Datenschutz() {
   return (
-    <div className={styles.page}>
+    <div className={styles.page} lang="de">
       <main className={styles.main}>
         <h1>Datenschutzerklärung</h1>
+        <p className={styles.note} lang="en">
+          This is the German privacy policy of PDF Shuffle. In short: files are
+          processed only in your browser, nothing is uploaded, no cookies or
+          analytics are used. The host (GitHub Pages) logs IP addresses for
+          technical operation.
+        </p>
 
         <h2>1. Verantwortlicher</h2>
         <p>
@@ -86,7 +92,7 @@ export default function Datenschutz() {
         </p>
 
         <p className={styles.back}>
-          <Link href="/">← Back</Link>
+          <Link href="/">← Zurück zur Startseite</Link>
         </p>
       </main>
     </div>
